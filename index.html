@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Team Tracker 2026 — Native Teams</title>
+<style>
+  :root {
+    --nt-blue: #1B3A6B;
+    --nt-blue-mid: #2C5F9C;
+    --nt-blue-light: #E6F1FB;
+    --nt-blue-pale: #F0F6FF;
+    --text: #1a1a2e;
+    --text-muted: #6b7280;
+    --text-light: #9ca3af;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --surface: #ffffff;
+    --surface-2: #f9fafb;
+    --surface-3: #f3f4f6;
+    --red-bg: #fef2f2; --red-border: #fca5a5; --red-text: #991b1b; --red-mid: #ef4444;
+    --amber-bg: #fffbeb; --amber-border: #fcd34d; --amber-text: #92400e; --amber-mid: #f59e0b;
+    --green-bg: #f0fdf4; --green-text: #166534;
+    --do-bg: #dbeafe; --do-text: #1e40af;
+    --ph-bg: #fef3c7; --ph-text: #92400e;
+    --sick-bg: #fee2e2; --sick-text: #991b1b;
+    --pl-bg: #dcfce7; --pl-text: #166534;
+    --bday-bg: #fef9c3; --bday-text: #854d0e;
+    --other-bg: #f3f4f6; --other-text: #374151;
+    --today-bg: #bfdbfe; --today-text: #1e3a8a;
+    --wknd-bg: #f9fafb;
+    --radius: 8px; --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; color: var(--text); min-height: 100vh; }
+
+  .topbar { background: var(--nt-blue); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .topbar-brand svg { width: 20px; height: 20px; opacity: .9; }
+  .topbar-meta { font-size: 12px; color: rgba(255,255,255,0.55); }
+  .sync-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: var(--radius); padding: 6px 14px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background .15s; }
+  .sync-btn:hover { background: rgba(255,255,255,0.2); }
+  .sync-btn.spinning svg { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--surface); border-radius: var(--radius-lg); padding: 16px 18px; border: 1px solid var(--border); }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .stat-val { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-val.blue { color: var(--nt-blue); }
+  .stat-val.red { color: #dc2626; }
+  .stat-val.amber { color: #d97706; }
+  .stat-val.green { color: #16a34a; }
+
+  .clash-banner { border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 20px; border-left: 4px solid transparent; }
+  .clash-banner.critical { background: var(--red-bg); border-left-color: var(--red-mid); }
+  .clash-banner.warning { background: var(--amber-bg); border-left-color: var(--amber-mid); }
+  .clash-banner.clear { background: var(--green-bg); border-left-color: #22c55e; }
+  .clash-banner-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .clash-banner.critical .clash-banner-title { color: var(--red-text); }
+  .clash-banner.warning .clash-banner-title { color: var(--amber-text); }
+  .clash-banner.clear .clash-banner-title { color: var(--green-text); }
+  .clash-item { font-size: 12px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.06); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .clash-item:last-child { border-bottom: none; }
+  .clash-date { font-weight: 600; min-width: 150px; }
+  .clash-people { color: var(--text-muted); }
+  .clash-pill { display: inline-block; border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 600; margin-right: 2px; }
+  .clash-pill.c3 { background: var(--red-bg); color: var(--red-text); }
+  .clash-pill.c2 { background: var(--amber-bg); color: var(--amber-text); }
+
+  .card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+  .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: var(--surface); }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .nav-group { display: flex; align-items: center; gap: 8px; }
+  .nav-btn { background: none; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 5px 10px; cursor: pointer; font-size: 13px; color: var(--text); transition: background .1s; }
+  .nav-btn:hover { background: var(--surface-2); }
+  .month-label { font-size: 14px; font-weight: 600; min-width: 140px; text-align: center; }
+  .tabs { display: flex; border: 1px solid var(--border-strong); border-radius: var(--radius); overflow: hidden; }
+  .tab { background: none; border: none; padding: 6px 14px; cursor: pointer; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .tab.on { background: var(--nt-blue); color: #fff; font-weight: 600; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .ldot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; min-width: 100%; font-size: 11px; }
+  thead th { background: var(--surface-2); font-weight: 600; font-size: 10px; color: var(--text-muted); padding: 8px 3px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 5; }
+  thead th.nc { text-align: left; padding-left: 14px; min-width: 160px; position: sticky; left: 0; z-index: 10; background: var(--surface-2); }
+  tbody td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); height: 34px; text-align: center; padding: 0; min-width: 28px; }
+  tbody td:last-child { border-right: none; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td.nmc { text-align: left; padding: 0 14px; font-size: 11px; font-weight: 600; position: sticky; left: 0; z-index: 3; background: var(--surface); white-space: nowrap; border-right: 1px solid var(--border-strong); }
+  tbody tr:nth-child(even) td.nmc { background: var(--surface-2); }
+  tbody tr:nth-child(even) td { background: var(--surface-2); }
+  .pip { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+  .clash-ind { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  td.wknd { background: var(--wknd-bg) !important; }
+  td.today-col { outline: 2px solid #3b82f6; outline-offset: -2px; }
+  th.today-col { background: var(--today-bg) !important; color: var(--today-text) !important; }
+  th.clash-h3 { background: #fee2e2 !important; }
+  th.clash-h2 { background: #fffbeb !important; }
+  td.sum { background: var(--surface-3) !important; font-size: 10px; font-weight: 600; min-width: 36px; }
+
+  .ann-grid { display: grid; grid-template-columns: 160px repeat(12, 1fr); }
+  .ann-grid > div { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: 9px 6px; font-size: 11px; text-align: center; }
+  .ann-grid > div:nth-child(13n) { border-right: none; }
+  .ann-grid > div.ah { background: var(--surface-2); font-weight: 600; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; z-index: 5; }
+  .ann-grid > div.an { text-align: left; padding-left: 14px; font-weight: 600; background: var(--surface); position: sticky; left: 0; z-index: 3; border-right: 1px solid var(--border-strong); }
+  .ann-grid > div.ah.an { background: var(--surface-2); z-index: 10; }
+  .ann-grid > div.ac { cursor: default; }
+  .ann-grid > div.cm { outline: 2px solid #3b82f6; outline-offset: -2px; }
+  .ann-grid > div:last-child { border-bottom: none; }
+
+  .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .loading-state .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--nt-blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  .err-bar { background: var(--red-bg); border: 1px solid var(--red-border); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--red-text); margin-bottom: 20px; }
+  .ts { font-size: 11px; color: var(--text-light); text-align: right; margin-top: 8px; }
+
+  .clash-count-badge { display: inline-flex; align-items: center; justify-content: center; background: #ef4444; color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 10px; font-weight: 700; margin-left: 5px; min-width: 18px; }
+
+  @media (max-width: 600px) {
+    .main { padding: 12px; }
+    .topbar { padding: 0 12px; }
+    .stat-val { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    HR Team Tracker 2026
+    <span class="topbar-meta">· Native Teams People &amp; Culture</span>
+  </div>
+  <button class="sync-btn" id="sync-btn" onclick="doRefresh()">
+    <svg id="sync-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+    Refresh
+  </button>
+</div>
+
+<div class="main">
+  <div id="err-area"></div>
+  <div id="loading-area" class="loading-state">
+    <div class="spinner"></div>
+    <div>Loading calendar data...</div>
+  </div>
+  <div id="content" style="display:none">
+    <div class="stats-row" id="stats-row"></div>
+    <div id="clash-banners"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="card-title">Absence calendar</span>
+          <div class="tabs">
+            <button class="tab on" id="tab-month" onclick="setTab('month')">Monthly</button>
+            <button class="tab" id="tab-clashes" onclick="setTab('clashes')">Clashes <span id="clash-badge" class="clash-count-badge" style="display:none"></span></button>
+            <button class="tab" id="tab-annual" onclick="setTab('annual')">Annual</button>
+          </div>
+        </div>
+        <div class="nav-group" id="month-nav">
+          <button class="nav-btn" onclick="changeMonth(-1)">&#8592;</button>
+          <span class="month-label" id="month-label"></span>
+          <button class="nav-btn" onclick="changeMonth(1)">&#8594;</button>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="leg"><div class="ldot" style="background:#bfdbfe"></div> Day off</div>
+        <div class="leg"><div class="ldot" style="background:#fde68a"></div> Public holiday</div>
+        <div class="leg"><div class="ldot" style="background:#fecaca"></div> Sick</div>
+        <div class="leg"><div class="ldot" style="background:#bbf7d0"></div> Parental leave</div>
+        <div class="leg"><div class="ldot" style="background:#fef08a"></div> Birthday</div>
+        <div class="leg"><div class="ldot" style="background:#fecaca;border-left:3px solid #ef4444;border-radius:2px"></div> 3+ off (critical)</div>
+        <div class="leg"><div class="ldot" style="background:#fde68a;border-left:3px solid #f59e0b;border-radius:2px"></div> 2 off (watch)</div>
+      </div>
+
+      <div id="pane-month" class="table-wrap"></div>
+      <div id="pane-clashes" style="display:none;padding:16px 18px"></div>
+      <div id="pane-annual" style="display:none" class="table-wrap"></div>
+    </div>
+
+    <div class="ts" id="ts-label"></div>
+  </div>
+</div>
+
+<script>
+const API_KEY = 'AIzaSyAXAvad1iH7AlGLvNIbe7wFcU2DCCJToeY';
+const CAL_ID = 'c_234b7e782a2f7cc6994fdbde7f71fe25f88f238d6af1c7871f1584c71a621390@group.calendar.google.com';
+const TEAM = [
+  'Daniela Jefremov','Milena Mladenovic Krusic','Maja Ristevska',
+  'Andrea Temelkovska','Ana Marija Temelkovska','Jovana Cafnik',
+  'Marija Iceva','Maja Krsteska'
+];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+const TC = { sick:'#fecaca', parental:'#bbf7d0', dayoff:'#bfdbfe', ph:'#fde68a', bday:'#fef08a', other:'#e5e7eb' };
+const TXT = { sick:'#991b1b', parental:'#166534', dayoff:'#1e40af', ph:'#92400e', bday:'#854d0e', other:'#374151' };
+const TL = { sick:'S', parental:'PL', dayoff:'DO', ph:'PH', bday:'B', other:'O' };
+const TNAME = { sick:'Sick', parental:'Parental leave', dayoff:'Day off', ph:'Public holiday', bday:'Birthday', other:'Other' };
+
+let evtMap = {}, curM = new Date().getMonth(), curY = 2026, curTab = 'month';
+
+function classify(s) {
+  const l = s.toLowerCase();
+  if (l.includes('sick') || l.includes('out sick')) return 'sick';
+  if (l.includes('parental') || l.includes('pregnancy') || l.includes('maternity')) return 'parental';
+  if (l.includes('public holiday')) return 'ph';
+  if (l.includes('bday') || l.includes('birthday') || l.includes('b-day')) return 'bday';
+  if (l.includes('day off') || l.includes('days off') || l.includes('holiday')) return 'dayoff';
+  return 'other';
+}
+
+function matchP(s) {
+  const l = s.toLowerCase();
+  for (const p of TEAM) {
+    const pts = p.toLowerCase().split(' ');
+    if (pts.every(x => l.includes(x.slice(0,5)))) return p;
+    if (l.includes(pts[0]) && l.includes(pts[pts.length-1].slice(0,5))) return p;
+  }
+  return null;
+}
+
+function pri(t) { return {sick:0,parental:1,dayoff:2,ph:3,bday:4,other:5}[t] ?? 9; }
+
+function buildMap(items) {
+  const m = {};
+  for (const e of items) {
+    const p = matchP(e.summary || ''); if (!p) continue;
+    const t = classify(e.summary || '');
+    const sd = e.start?.date || e.start?.dateTime;
+    const ed = e.end?.date || e.end?.dateTime;
+    if (!sd || !ed) continue;
+    let d = new Date(sd.slice(0,10) + 'T00:00:00');
+    const end = new Date(ed.slice(0,10) + 'T00:00:00');
+    while (d < end) {
+      const k = p + '|' + d.toISOString().slice(0,10);
+      if (!m[k] || pri(t) < pri(m[k].type)) m[k] = { type: t, summary: e.summary };
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  return m;
+}
+
+function getClashes() {
+  const checked = new Set(), clashes = [];
+  for (const k of Object.keys(evtMap)) {
+    const [,date] = k.split('|');
+    if (checked.has(date)) continue;
+    checked.add(date);
+    const dd = new Date(date + 'T00:00:00');
+    if (dd.getDay() === 0 || dd.getDay() === 6) continue;
+    const absent = TEAM.filter(p => { const ev = evtMap[p+'|'+date]; return ev && ev.type !== 'bday'; });
+    if (absent.length >= 2) clashes.push({ date, count: absent.length, people: absent, types: absent.map(p => evtMap[p+'|'+date].type) });
+  }
+  return clashes.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function dim(y, m) { return new Date(y, m+1, 0).getDate(); }
+
+async function doRefresh() {
+  const btn = document.getElementById('sync-btn');
+  btn.classList.add('spinning');
+  document.getElementById('err-area').innerHTML = '';
+
+  try {
+    const base = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events`;
+    let all = [], token = null;
+    do {
+      const p = new URLSearchParams({ key: API_KEY, timeMin: '2026-01-01T00:00:00Z', timeMax: '2026-12-31T23:59:59Z', maxResults: '250', singleEvents: 'true', orderBy: 'startTime' });
+      if (token) p.set('pageToken', token);
+      const r = await fetch(`${base}?${p}`);
+      if (!r.ok) throw new Error('Google Calendar API error ' + r.status + '. Check your API key and that the calendar is public.');
+      const data = await r.json();
+      all = all.concat(data.items || []);
+      token = data.nextPageToken || null;
+    } while (token);
+
+    evtMap = buildMap(all);
+    document.getElementById('loading-area').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    document.getElementById('ts-label').textContent = 'Last synced: ' + new Date().toLocaleString('en-GB');
+    renderAll();
+  } catch(e) {
+    document.getElementById('loading-area').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    document.getElementById('err-area').innerHTML = `<div class="err-bar">&#9888; ${e.message}</div>`;
+    evtMap = {};
+    renderAll();
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+function renderAll() {
+  renderStats();
+  renderClashBanners();
+  renderMonth();
+  renderClashes();
+  renderAnnual();
+}
+
+function renderStats() {
+  const today = new Date().toISOString().slice(0,10);
+  const nm = new Date().getMonth(), ny = new Date().getFullYear();
+  const d = dim(ny, nm);
+  let mDO=0, mS=0, plSet=new Set();
+  const allClashes = getClashes();
+  const upcoming = allClashes.filter(c => c.date >= today);
+
+  for (let day = 1; day <= d; day++) {
+    const ds = `${ny}-${String(nm+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    for (const p of TEAM) {
+      const ev = evtMap[p+'|'+ds];
+      if (!ev || ev.type === 'bday') continue;
+      if (ev.type === 'sick') mS++;
+      else if (ev.type === 'dayoff' || ev.type === 'ph') mDO++;
+      else if (ev.type === 'parental') plSet.add(p);
+    }
+  }
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat"><div class="stat-label">Days off this month</div><div class="stat-val blue">${mDO}</div></div>
+    <div class="stat"><div class="stat-label">Sick days this month</div><div class="stat-val red">${mS}</div></div>
+    <div class="stat"><div class="stat-label">Upcoming clash days</div><div class="stat-val amber">${upcoming.length}</div></div>
+    <div class="stat"><div class="stat-label">On parental leave</div><div class="stat-val green">${plSet.size}</div></div>
+  `;
+}
+
+function renderClashBanners() {
+  const today = new Date().toISOString().slice(0,10);
+  const clashes = getClashes().filter(c => c.date >= today).slice(0, 15);
+  const crit = clashes.filter(c => c.count >= 3);
+  const warn = clashes.filter(c => c.count === 2);
+  let html = '';
+
+  if (crit.length > 0) {
+    html += `<div class="clash-banner critical">
+      <div class="clash-banner-title">&#9888; Critical — ${crit.length} upcoming day${crit.length>1?'s':''} with 3 or more people absent</div>`;
+    for (const c of crit) {
+      const dd = new Date(c.date+'T00:00:00');
+      const fmt = dd.toLocaleDateString('en-GB', {weekday:'long',day:'numeric',month:'long'});
+      html += `<div class="clash-item"><span class="clash-date">${fmt}</span><span class="clash-people">${c.people.map((p,i) => `${p} <em style="font-style:normal;opacity:.7">(${TNAME[c.types[i]]})</em>`).join(' · ')}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (warn.length > 0) {
+    html += `<div class="clash-banner warning" style="margin-top:${crit.length?'10px':'0'}">
+      <div class="clash-banner-title">&#9651; Watch — ${warn.length} upcoming day${warn.length>1?'s':''} with 2 people absent simultaneously</div>`;
+    for (const c of warn) {
+      const dd = new Date(c.date+'T00:00:00');
+      const fmt = dd.toLocaleDateString('en-GB', {weekday:'long',day:'numeric',month:'long'});
+      html += `<div class="clash-item"><span class="clash-date">${fmt}</span><span class="clash-people">${c.people.map((p,i)=>`${p} <em style="font-style:normal;opacity:.7">(${TNAME[c.types[i]]})</em>`).join(' · ')}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (crit.length === 0 && warn.length === 0) {
+    html = `<div class="clash-banner clear"><div class="clash-banner-title">&#10003; No upcoming clash days — all clear for the rest of the year</div></div>`;
+  }
+
+  document.getElementById('clash-banners').innerHTML = html;
+}
+
+function setTab(t) {
+  curTab = t;
+  ['month','clashes','annual'].forEach(x => {
+    document.getElementById('tab-'+x).classList.toggle('on', x===t);
+    document.getElementById('pane-'+x).style.display = x===t ? (x==='annual'?'block':'block') : 'none';
+  });
+  document.getElementById('month-nav').style.display = t === 'month' ? 'flex' : 'none';
+}
+
+function changeMonth(d) {
+  curM += d;
+  if (curM > 11) { curM = 0; curY++; }
+  if (curM < 0) { curM = 11; curY--; }
+  renderMonth();
+}
+
+function renderMonth() {
+  document.getElementById('month-label').textContent = MONTHS[curM] + ' ' + curY;
+  const days = dim(curY, curM);
+  const todayStr = new Date().toISOString().slice(0,10);
+  const allClashes = getClashes();
+  const clashMap = {};
+  for (const c of allClashes) clashMap[c.date] = c.count;
+
+  let countAbsent = {};
+  for (let d = 1; d <= days; d++) {
+    const ds = `${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let n = 0;
+    for (const p of TEAM) { const ev = evtMap[p+'|'+ds]; if (ev && ev.type !== 'bday') n++; }
+    countAbsent[ds] = n;
+  }
+
+  let html = '<table><thead><tr><th class="nc">Team member</th>';
+  for (let d = 1; d <= days; d++) {
+    const ds = `${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dd = new Date(ds+'T00:00:00');
+    const wk = dd.getDay(); const isW = wk===0||wk===6;
+    const isTd = ds === todayStr;
+    const cc = clashMap[ds] || 0;
+    let cls = isTd ? 'today-col' : (cc>=3&&!isW?'clash-h3':cc>=2&&!isW?'clash-h2':'');
+    html += `<th class="${cls}" style="${isW?'color:#9ca3af':''}">${d}<br><span style="font-size:8px;font-weight:400">${DAYS[wk]}</span></th>`;
+  }
+  html += '<th class="sum">DO</th><th class="sum">S</th><th class="sum">PH</th><th class="sum">PL</th></tr></thead><tbody>';
+
+  for (const person of TEAM) {
+    let cDO=0, cS=0, cPH=0, cPL=0, hasC3=false, hasC2=false;
+    for (let d = 1; d <= days; d++) {
+      const ds = `${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const ev = evtMap[person+'|'+ds];
+      const cnt = countAbsent[ds]||0;
+      const ddx = new Date(ds+'T00:00:00'); const isW = ddx.getDay()===0||ddx.getDay()===6;
+      if (ev && ev.type!=='bday' && !isW) { if(cnt>=3) hasC3=true; else if(cnt>=2) hasC2=true; }
+    }
+    const ind = hasC3 ? `<span class="clash-ind" style="background:#ef4444"></span>` : hasC2 ? `<span class="clash-ind" style="background:#f59e0b"></span>` : '';
+    html += `<tr><td class="nmc">${ind}${person}</td>`;
+    for (let d = 1; d <= days; d++) {
+      const ds = `${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const isTd = ds===todayStr;
+      const ddx = new Date(ds+'T00:00:00'); const isW = ddx.getDay()===0||ddx.getDay()===6;
+      const ev = evtMap[person+'|'+ds];
+      const cc = clashMap[ds]||0;
+      let bg = isW ? '#f9fafb' : 'transparent';
+      let inner = '';
+      if (ev) {
+        bg = TC[ev.type];
+        inner = `<div class="pip" style="background:${TC[ev.type]};color:${TXT[ev.type]}">${TL[ev.type]}</div>`;
+        if (ev.type==='dayoff') cDO++;
+        else if (ev.type==='sick') cS++;
+        else if (ev.type==='ph') cPH++;
+        else if (ev.type==='parental') cPL++;
+      } else if (!isW && cc>=3) { bg='#fff1f2'; }
+      else if (!isW && cc>=2) { bg='#fffbeb'; }
+      const tdCls = isTd ? 'today-col' : (isW?'wknd':'');
+      html += `<td class="${tdCls}" style="background:${bg}" title="${ev?ev.summary:''}">${inner}</td>`;
+    }
+    html += `<td class="sum">${cDO||''}</td><td class="sum" style="${cS?'color:#dc2626':''}">${cS||''}</td><td class="sum">${cPH||''}</td><td class="sum" style="${cPL?'color:#16a34a':''}">${cPL?cPL+'d':''}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('pane-month').innerHTML = html;
+}
+
+function renderClashes() {
+  const today = new Date().toISOString().slice(0,10);
+  const all = getClashes();
+  const future = all.filter(c => c.date >= today);
+  const past = all.filter(c => c.date < today);
+
+  const badge = document.getElementById('clash-badge');
+  if (future.length > 0) { badge.style.display='inline-flex'; badge.textContent=future.length; }
+  else { badge.style.display='none'; }
+
+  let html = '';
+  if (all.length === 0) { html = '<p style="font-size:13px;color:#6b7280;padding:8px 0">No clash days found in the calendar this year.</p>'; }
+
+  const renderGroup = (items, title, isCrit) => {
+    if (!items.length) return '';
+    let s = `<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:${isCrit?'#991b1b':'#92400e'};margin-bottom:8px;display:flex;align-items:center;gap:6px">${isCrit?'&#9888;':'&#9651;'} ${title}</div>`;
+    for (const c of items) {
+      const dd = new Date(c.date+'T00:00:00');
+      const fmt = dd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      s += `<div style="border:1px solid ${isCrit?'#fca5a5':'#fcd34d'};background:${isCrit?'#fef2f2':'#fffbeb'};border-radius:8px;padding:10px 14px;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:600;color:${isCrit?'#991b1b':'#92400e'};margin-bottom:4px">${fmt} — ${c.count} people absent</div>
+        <div style="font-size:11px;color:#6b7280">${c.people.map((p,i)=>`<strong style="color:${isCrit?'#7f1d1d':'#78350f'}">${p}</strong> <span>(${TNAME[c.types[i]]})</span>`).join(' &nbsp;·&nbsp; ')}</div>
+      </div>`;
+    }
+    return s + '</div>';
+  };
+
+  if (future.length > 0) {
+    html += renderGroup(future.filter(c=>c.count>=3), `Critical — 3+ people off (${future.filter(c=>c.count>=3).length} day${future.filter(c=>c.count>=3).length!==1?'s':''})`, true);
+    html += renderGroup(future.filter(c=>c.count===2), `Watch — 2 people off same day (${future.filter(c=>c.count===2).length} day${future.filter(c=>c.count===2).length!==1?'s':''})`, false);
+  }
+
+  if (past.length > 0) {
+    html += `<details style="margin-top:8px"><summary style="font-size:12px;color:#6b7280;cursor:pointer;padding:4px 0">Past clash days this year (${past.length})</summary><div style="margin-top:10px">`;
+    for (const c of past.slice(-30).reverse()) {
+      const dd = new Date(c.date+'T00:00:00');
+      const fmt = dd.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      html += `<div style="font-size:11px;color:#9ca3af;padding:4px 0;border-bottom:1px solid #f3f4f6">${fmt} — ${c.people.join(', ')}</div>`;
+    }
+    html += '</div></details>';
+  }
+
+  document.getElementById('pane-clashes').innerHTML = html;
+}
+
+function renderAnnual() {
+  const curMI = new Date().getMonth();
+  let html = '<div class="ann-grid">';
+  html += '<div class="ah an">Member</div>';
+  for (const m of MS) html += `<div class="ah">${m}</div>`;
+
+  for (const person of TEAM) {
+    const initials = person.split(' ').map(x=>x[0]).join('').slice(0,3);
+    html += `<div class="an" title="${person}">${person.split(' ')[0]} ${person.split(' ').slice(1).map(x=>x[0]+'.').join('')}</div>`;
+    for (let mi = 0; mi < 12; mi++) {
+      const d = dim(curY, mi);
+      let cDO=0, cS=0, cPH=0, cPL=0;
+      for (let day = 1; day <= d; day++) {
+        const ds = `${curY}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const ev = evtMap[person+'|'+ds];
+        if (!ev) continue;
+        if (ev.type==='dayoff') cDO++;
+        else if (ev.type==='sick') cS++;
+        else if (ev.type==='ph') cPH++;
+        else if (ev.type==='parental') cPL++;
+      }
+      const isCm = mi === curMI;
+      let bg='transparent', content='', textColor='#374151';
+      if (cPL>0){ bg='#dcfce7'; content=`<span style="font-size:10px;font-weight:700;color:#166534">PL</span>`; }
+      else if (cS>0){ bg='#fee2e2'; content=`<span style="color:#991b1b;font-weight:700">${cS}s</span>`; }
+      else if (cDO>0){ bg='#dbeafe'; content=`<span style="color:#1e40af;font-weight:600">${cDO}</span>`; }
+      else if (cPH>0){ bg='#fef3c7'; content=`<span style="color:#92400e">${cPH}ph</span>`; }
+      html += `<div class="ac${isCm?' cm':''}" style="background:${bg}">${content}</div>`;
+    }
+  }
+  html += '</div>';
+  document.getElementById('pane-annual').innerHTML = html;
+}
+
+doRefresh();
+</script>
+</body>
+</html>
