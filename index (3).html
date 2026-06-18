@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Team Tracker 2026 — Native Teams</title>
+<style>
+  :root {
+    --nt-blue:#1B3A6B;--nt-mid:#2C5F9C;
+    --text:#1a1a2e;--muted:#6b7280;--light:#9ca3af;
+    --border:#e5e7eb;--border-s:#d1d5db;
+    --s:#fff;--s2:#f9fafb;--s3:#f3f4f6;
+    --r:8px;--rl:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f0f4f8;color:var(--text);min-height:100vh}
+  .topbar{background:var(--nt-blue);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-size:15px;font-weight:600}
+  .brand svg{width:20px;height:20px;opacity:.9}
+  .brand-meta{font-size:12px;color:rgba(255,255,255,.45)}
+  .sync-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:var(--r);padding:6px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s}
+  .sync-btn:hover{background:rgba(255,255,255,.2)}
+  .sync-btn.spinning svg{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .main{max-width:1200px;margin:0 auto;padding:24px 20px}
+  .st-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .st-tab{background:var(--s);border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:6px}
+  .st-tab:hover{border-color:var(--nt-mid);color:var(--nt-blue)}
+  .st-tab.on{background:var(--nt-blue);border-color:var(--nt-blue);color:#fff}
+  .st-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .stat{background:var(--s);border-radius:var(--rl);padding:16px 18px;border:1px solid var(--border)}
+  .slabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+  .sval{font-size:26px;font-weight:700;line-height:1}
+  .banner{border-radius:var(--rl);padding:13px 17px;margin-bottom:12px;border-left:4px solid transparent}
+  .banner.crit{background:#fef2f2;border-left-color:#ef4444}
+  .banner.warn{background:#fffbeb;border-left-color:#f59e0b}
+  .banner.clear{background:#f0fdf4;border-left-color:#22c55e}
+  .btitle{font-size:12px;font-weight:600;margin-bottom:7px}
+  .banner.crit .btitle{color:#991b1b}
+  .banner.warn .btitle{color:#92400e}
+  .banner.clear .btitle{color:#166534}
+  .bitem{font-size:11px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .bitem:last-child{border-bottom:none}
+  .bdate{font-weight:600;color:#374151;min-width:165px}
+  .bpct{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .bpct.crit{background:#fee2e2;color:#991b1b}
+  .bpct.warn{background:#fef3c7;color:#92400e}
+  .bpeople{color:var(--muted)}
+  .card{background:var(--s);border-radius:var(--rl);border:1px solid var(--border);margin-bottom:20px;overflow:hidden}
+  .chdr{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .ctitle{font-size:14px;font-weight:600}
+  .tabs{display:flex;border:1px solid var(--border-s);border-radius:var(--r);overflow:hidden}
+  .tab{background:none;border:none;padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted)}
+  .tab.on{background:var(--nt-blue);color:#fff;font-weight:600}
+  .navg{display:flex;align-items:center;gap:8px}
+  .nbtn{background:none;border:1px solid var(--border-s);border-radius:var(--r);padding:5px 10px;cursor:pointer;font-size:13px;color:var(--text)}
+  .nbtn:hover{background:var(--s2)}
+  .mlabel{font-size:14px;font-weight:600;min-width:140px;text-align:center}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);background:var(--s2)}
+  .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+  .ldot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .sthdr{background:var(--s2);padding:7px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+  .shdot{width:8px;height:8px;border-radius:50%}
+  .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;min-width:100%;font-size:11px}
+  thead th{background:var(--s2);font-weight:600;font-size:9px;color:var(--muted);padding:7px 3px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:5}
+  thead th.nc{text-align:left;padding-left:14px;min-width:175px;position:sticky;left:0;z-index:10;background:var(--s2)}
+  tbody td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);height:33px;text-align:center;padding:0;min-width:28px}
+  tbody td:last-child{border-right:none}
+  tbody tr:last-child td{border-bottom:none}
+  tbody td.nmc{text-align:left;padding:0 14px;font-size:11px;font-weight:600;position:sticky;left:0;z-index:3;background:var(--s);white-space:nowrap;border-right:1px solid var(--border-s)}
+  tbody tr:nth-child(even) td.nmc{background:var(--s2)}
+  tbody tr:nth-child(even) td{background:var(--s2)}
+  .pip{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+  td.wknd{background:#f9fafb!important}
+  td.tdc{outline:2px solid #3b82f6;outline-offset:-2px}
+  th.tdc{background:#bfdbfe!important;color:#1e3a8a!important}
+  th.ch3{background:#fee2e2!important;color:#991b1b!important}
+  th.ch2{background:#fef3c7!important;color:#92400e!important}
+  td.sum{background:var(--s3)!important;font-size:10px;font-weight:600;min-width:34px}
+  tr.mlrow td{opacity:.55;font-style:italic}
+  .badge{display:inline-flex;align-items:center;justify-content:center;background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:4px;min-width:18px}
+  .err{background:#fef2f2;border:1px solid #fca5a5;border-radius:var(--r);padding:12px 16px;font-size:13px;color:#991b1b;margin-bottom:16px}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted)}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--nt-blue);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  .ts{font-size:11px;color:var(--light);text-align:right;margin-top:8px}
+  .ann-grid{display:grid;grid-template-columns:170px repeat(12,1fr)}
+  .ann-grid>div{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:8px 5px;font-size:11px;text-align:center}
+  .ann-grid>div:nth-child(13n){border-right:none}
+  .ann-grid>.ah{background:var(--s2);font-weight:600;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .ann-grid>.an{text-align:left;padding-left:14px;font-weight:600;background:var(--s);position:sticky;left:0;z-index:3;border-right:1px solid var(--border-s)}
+  .ann-grid>.ah.an{background:var(--s2);z-index:10}
+  .ann-grid>.cm{outline:2px solid #3b82f6;outline-offset:-2px}
+  .ann-grid>.asth{background:var(--s2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-left:14px;text-align:left;border-right:1px solid var(--border-s);border-top:2px solid var(--border-s)}
+  .ann-grid>.astsp{background:var(--s2);border-top:2px solid var(--border-s)}
+  @media(max-width:600px){.main{padding:12px}.topbar{padding:0 12px}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    HR Team Tracker 2026
+    <span class="brand-meta">· Native Teams People &amp; Culture</span>
+  </div>
+  <button class="sync-btn" id="sync-btn" onclick="doRefresh()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+    Refresh
+  </button>
+</div>
+
+<div class="main">
+  <div id="err-area"></div>
+  <div id="load-area" class="loading"><div class="spinner"></div>Loading calendar data...</div>
+  <div id="content" style="display:none">
+    <div class="st-tabs">
+      <button class="st-tab on" onclick="setST('all')"><span class="st-dot" style="background:#1B3A6B"></span>All team</button>
+      <button class="st-tab" onclick="setST('rec')"><span class="st-dot" style="background:#7c3aed"></span>Recruitment</button>
+      <button class="st-tab" onclick="setST('hr')"><span class="st-dot" style="background:#0891b2"></span>HR Admin</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div id="banners"></div>
+    <div class="card">
+      <div class="chdr">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="ctitle" id="ctitle">All team</span>
+          <div class="tabs">
+            <button class="tab on" id="t-month" onclick="setTab('month')">Monthly</button>
+            <button class="tab" id="t-clashes" onclick="setTab('clashes')">Clashes<span class="badge" id="cbadge" style="display:none"></span></button>
+            <button class="tab" id="t-annual" onclick="setTab('annual')">Annual</button>
+          </div>
+        </div>
+        <div class="navg" id="mnav">
+          <button class="nbtn" onclick="chMonth(-1)">&#8592;</button>
+          <span class="mlabel" id="mlabel"></span>
+          <button class="nbtn" onclick="chMonth(1)">&#8594;</button>
+        </div>
+      </div>
+      <div class="legend">
+        <div class="leg"><div class="ldot" style="background:#bfdbfe"></div>Day off</div>
+        <div class="leg"><div class="ldot" style="background:#fde68a"></div>Public holiday</div>
+        <div class="leg"><div class="ldot" style="background:#fecaca"></div>Sick</div>
+        <div class="leg"><div class="ldot" style="background:#bbf7d0"></div>Parental / maternity leave</div>
+        <div class="leg"><div class="ldot" style="background:#fef08a"></div>Birthday</div>
+        <div class="leg"><div class="ldot" style="background:#fee2e2;border-left:3px solid #ef4444;border-radius:2px"></div>Only 1 in Recruitment (critical)</div>
+        <div class="leg"><div class="ldot" style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:2px"></div>Only 2 in Recruitment (watch)</div>
+      </div>
+      <div id="p-month" class="twrap"></div>
+      <div id="p-clashes" style="display:none;padding:16px 18px"></div>
+      <div id="p-annual" style="display:none" class="twrap"></div>
+    </div>
+    <div class="ts" id="ts"></div>
+  </div>
+</div>
+
+<script>
+const API_KEY='AIzaSyAXAvad1iH7AlGLvNIbe7wFcU2DCCJToeY';
+const CAL_ID='c_234b7e782a2f7cc6994fdbde7f71fe25f88f238d6af1c7871f1584c71a621390@group.calendar.google.com';
+
+// Sub-team structure
+const REC_MEMBERS=['Maja Ristevska','Andrea Temelkovska','Ana Marija Temelkovska','Jovana Cafnik'];
+const HR_MEMBERS=['Milica Kijanovic','Marija Iceva','Maja Krsteska'];
+const LEADERSHIP=['Daniela Jefremov','Milena Mladenovic Krusic'];
+const ALL_TEAM=[...REC_MEMBERS,...HR_MEMBERS,...LEADERSHIP];
+
+// On long-term leave — shown as PL block, excluded from clash logic
+const ON_LEAVE=['Maja Krsteska','Milica Kijanovic'];
+
+// Country mapping for public holidays
+// Key = substring that appears in calendar event summary (lowercase)
+// Value = array of team members who observe that holiday
+const PH_MAP={
+  'macedonia':['Maja Ristevska','Andrea Temelkovska','Ana Marija Temelkovska','Jovana Cafnik','Marija Iceva','Maja Krsteska'],
+  'croatia':['Milena Mladenovic Krusic'],
+  'usa':['Daniela Jefremov'],
+  'united states':['Daniela Jefremov'],
+  'serbia':['Milica Kijanovic'],
+};
+
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+const TC={sick:'#fecaca',parental:'#bbf7d0',dayoff:'#bfdbfe',ph:'#fde68a',bday:'#fef08a',other:'#e5e7eb'};
+const TXT={sick:'#991b1b',parental:'#166534',dayoff:'#1e40af',ph:'#92400e',bday:'#854d0e',other:'#374151'};
+const TL={sick:'S',parental:'PL',dayoff:'DO',ph:'PH',bday:'B',other:'O'};
+const TNAME={sick:'Sick',parental:'Parental / maternity leave',dayoff:'Day off',ph:'Public holiday',bday:'Birthday',other:'Other'};
+
+let evtMap={},curM=new Date().getMonth(),curY=2026,curTab='month',curST='all';
+
+function classify(s){
+  const l=s.toLowerCase();
+  if(l.includes('sick')||l.includes('out sick')) return 'sick';
+  if(l.includes('parental')||l.includes('pregnancy')||l.includes('maternity')) return 'parental';
+  if(l.includes('public holiday')) return 'ph';
+  if(l.includes('bday')||l.includes('birthday')||l.includes('b-day')) return 'bday';
+  if(l.includes('day off')||l.includes('days off')||l.includes('holiday')) return 'dayoff';
+  return 'other';
+}
+
+function matchPerson(s){
+  const l=s.toLowerCase();
+  for(const p of ALL_TEAM){
+    const pts=p.toLowerCase().split(' ');
+    if(pts.every(x=>l.includes(x.slice(0,5)))) return p;
+    if(l.includes(pts[0])&&l.includes(pts[pts.length-1].slice(0,5))) return p;
+  }
+  return null;
+}
+
+// Check if a calendar event is a country public holiday and return affected members
+function getPhMembers(summary){
+  const l=summary.toLowerCase();
+  // Only process if it looks like a country-level public holiday (not personal)
+  if(!l.includes('public holiday')) return null;
+  for(const[country,members] of Object.entries(PH_MAP)){
+    if(l.startsWith(country)||l.includes(' - '+country)||l.includes(country+' -')||l.startsWith(country.split(' ')[0])){
+      return members;
+    }
+  }
+  return null;
+}
+
+function pri(t){return{sick:0,parental:1,dayoff:2,ph:3,bday:4,other:5}[t]??9}
+
+function buildMap(items){
+  const m={};
+
+  const setKey=(person,dateStr,type,summary)=>{
+    const k=person+'|'+dateStr;
+    if(!m[k]||pri(type)<pri(m[k].type)) m[k]={type,summary};
+  };
+
+  const expandDates=(sd,ed,fn)=>{
+    let d=new Date(sd.slice(0,10)+'T00:00:00');
+    const end=new Date(ed.slice(0,10)+'T00:00:00');
+    while(d<end){fn(d.toISOString().slice(0,10));d.setDate(d.getDate()+1);}
+  };
+
+  for(const e of items){
+    const summary=e.summary||'';
+    const sd=e.start?.date||e.start?.dateTime;
+    const ed=e.end?.date||e.end?.dateTime;
+    if(!sd||!ed) continue;
+
+    // Check if it's a country-wide public holiday
+    const phMembers=getPhMembers(summary);
+    if(phMembers){
+      expandDates(sd,ed,ds=>{
+        for(const p of phMembers) setKey(p,ds,'ph',summary);
+      });
+      continue;
+    }
+
+    // Personal event — match to individual
+    const person=matchPerson(summary);
+    if(!person) continue;
+    const type=classify(summary);
+    expandDates(sd,ed,ds=>setKey(person,ds,type,summary));
+  }
+
+  // Mark long-term leave members as PL for all of 2026
+  for(const p of ON_LEAVE){
+    for(let mi=0;mi<12;mi++){
+      const d=new Date(2026,mi+1,0).getDate();
+      for(let day=1;day<=d;day++){
+        const ds=`2026-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        if(!m[p+'|'+ds]) m[p+'|'+ds]={type:'parental',summary:p+' — maternity / parental leave'};
+      }
+    }
+  }
+  return m;
+}
+
+function dim(y,m){return new Date(y,m+1,0).getDate()}
+
+// Recruitment clash logic:
+// Count active (non-leave) Recruitment members present on a given day
+// Warning  = only 2 present (2 off)
+// Critical = only 1 present (3 off)
+// Fine     = 3+ present (0 or 1 off)
+function getRecClashes(){
+  const active=REC_MEMBERS.filter(p=>!ON_LEAVE.includes(p)); // 4 people
+  const clashes=[];
+  const seen=new Set();
+  for(const k of Object.keys(evtMap)){
+    const[,date]=k.split('|');
+    if(seen.has(date)) continue;
+    seen.add(date);
+    const dd=new Date(date+'T00:00:00');
+    if(dd.getDay()===0||dd.getDay()===6) continue;
+    const absent=active.filter(p=>{const ev=evtMap[p+'|'+date];return ev&&ev.type!=='bday'&&ev.type!=='ph';});
+    const present=active.length-absent.length;
+    if(present<=1) clashes.push({date,absent,present,total:active.length,level:'crit'});
+    else if(present===2) clashes.push({date,absent,present,total:active.length,level:'warn'});
+  }
+  return clashes.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function getActiveTeam(){
+  if(curST==='all') return ALL_TEAM;
+  if(curST==='rec') return REC_MEMBERS;
+  return HR_MEMBERS;
+}
+
+async function doRefresh(){
+  const btn=document.getElementById('sync-btn');
+  btn.classList.add('spinning');
+  document.getElementById('err-area').innerHTML='';
+  try{
+    const base=`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events`;
+    let all=[],token=null;
+    do{
+      const p=new URLSearchParams({key:API_KEY,timeMin:'2026-01-01T00:00:00Z',timeMax:'2026-12-31T23:59:59Z',maxResults:'250',singleEvents:'true',orderBy:'startTime'});
+      if(token) p.set('pageToken',token);
+      const r=await fetch(`${base}?${p}`);
+      if(!r.ok) throw new Error('Google Calendar API error '+r.status+'. Make sure the calendar is set to public.');
+      const data=await r.json();
+      all=all.concat(data.items||[]);
+      token=data.nextPageToken||null;
+    }while(token);
+    evtMap=buildMap(all);
+    document.getElementById('ts').textContent='Last synced: '+new Date().toLocaleString('en-GB');
+    document.getElementById('load-area').style.display='none';
+    document.getElementById('content').style.display='block';
+    renderAll();
+  }catch(e){
+    document.getElementById('load-area').style.display='none';
+    document.getElementById('content').style.display='block';
+    document.getElementById('err-area').innerHTML=`<div class="err">&#9888; ${e.message}</div>`;
+    evtMap={};renderAll();
+  }finally{btn.classList.remove('spinning');}
+}
+
+function setST(st){
+  curST=st;
+  document.querySelectorAll('.st-tab').forEach((b,i)=>b.classList.toggle('on',['all','rec','hr'][i]===st));
+  document.getElementById('ctitle').textContent={all:'All team',rec:'Recruitment',hr:'HR Admin'}[st];
+  renderAll();
+}
+
+function renderAll(){renderStats();renderBanners();renderMonth();renderClashes();renderAnnual();}
+
+function renderStats(){
+  const today=new Date().toISOString().slice(0,10);
+  const nm=new Date().getMonth(),ny=new Date().getFullYear();
+  const d=dim(ny,nm);
+  const team=getActiveTeam().filter(p=>!ON_LEAVE.includes(p));
+  let mDO=0,mS=0;
+  const clashes=getRecClashes();
+  const upcoming=clashes.filter(c=>c.date>=today);
+
+  for(let day=1;day<=d;day++){
+    const ds=`${ny}-${String(nm+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    for(const p of team){
+      const ev=evtMap[p+'|'+ds];
+      if(!ev||ev.type==='bday') continue;
+      if(ev.type==='sick') mS++;
+      else if(ev.type==='dayoff'||ev.type==='ph') mDO++;
+    }
+  }
+
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="slabel">Days off this month</div><div class="sval" style="color:#1B3A6B">${mDO}</div></div>
+    <div class="stat"><div class="slabel">Sick days this month</div><div class="sval" style="color:#dc2626">${mS}</div></div>
+    <div class="stat"><div class="slabel">Recruitment clashes ahead</div><div class="sval" style="color:#d97706">${upcoming.length}</div></div>
+    <div class="stat"><div class="slabel">On maternity / parental</div><div class="sval" style="color:#16a34a">${ON_LEAVE.length}</div></div>
+  `;
+}
+
+function renderBanners(){
+  const today=new Date().toISOString().slice(0,10);
+  const clashes=getRecClashes().filter(c=>c.date>=today).slice(0,15);
+  const crit=clashes.filter(c=>c.level==='crit');
+  const warn=clashes.filter(c=>c.level==='warn');
+  let html='';
+
+  const renderGroup=(items,isCrit)=>{
+    if(!items.length) return '';
+    const title=isCrit
+      ? `&#9888; Critical — ${items.length} day${items.length>1?'s':''} with only 1 person available in Recruitment`
+      : `&#9651; Watch — ${items.length} day${items.length>1?'s':''} with only 2 people available in Recruitment`;
+    let s=`<div class="banner ${isCrit?'crit':'warn'}"><div class="btitle">${title}</div>`;
+    for(const c of items){
+      const dd=new Date(c.date+'T00:00:00');
+      const fmt=dd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+      const pct=Math.round((c.absent.length/c.total)*100);
+      s+=`<div class="bitem">
+        <span class="bdate">${fmt}</span>
+        <span class="bpct ${isCrit?'crit':'warn'}">${c.absent.length} of ${c.total} absent &nbsp;·&nbsp; ${pct}% off</span>
+        <span class="bpeople">${c.absent.map(p=>`${p} <em style="font-style:normal;opacity:.7">(${TNAME[evtMap[p+'|'+c.date]?.type||'other']})</em>`).join(' · ')}</span>
+      </div>`;
+    }
+    return s+'</div>';
+  };
+
+  html+=renderGroup(crit,true);
+  html+=renderGroup(warn,false);
+  if(!crit.length&&!warn.length) html=`<div class="banner clear"><div class="btitle">&#10003; Recruitment is well covered — at least 3 people available every upcoming working day</div></div>`;
+  document.getElementById('banners').innerHTML=html;
+}
+
+function setTab(t){
+  curTab=t;
+  ['month','clashes','annual'].forEach(x=>{
+    document.getElementById('t-'+x).classList.toggle('on',x===t);
+    document.getElementById('p-'+x).style.display=x===t?'block':'none';
+  });
+  document.getElementById('mnav').style.display=t==='month'?'flex':'none';
+}
+
+function chMonth(d){
+  curM+=d;
+  if(curM>11){curM=0;curY++;}
+  if(curM<0){curM=11;curY--;}
+  renderMonth();
+}
+
+function renderMonth(){
+  document.getElementById('mlabel').textContent=MONTHS[curM]+' '+curY;
+  const days=dim(curY,curM);
+  const todayStr=new Date().toISOString().slice(0,10);
+  const activeRec=REC_MEMBERS.filter(p=>!ON_LEAVE.includes(p));
+
+  // Build per-date clash level for Recruitment
+  const clashLevel={};
+  for(let d=1;d<=days;d++){
+    const ds=`${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dd=new Date(ds+'T00:00:00');
+    if(dd.getDay()===0||dd.getDay()===6) continue;
+    const absent=activeRec.filter(p=>{const ev=evtMap[p+'|'+ds];return ev&&ev.type!=='bday'&&ev.type!=='ph';});
+    const present=activeRec.length-absent.length;
+    if(present<=1) clashLevel[ds]='crit';
+    else if(present===2) clashLevel[ds]='warn';
+  }
+
+  const team=getActiveTeam();
+  let html='<table><thead><tr><th class="nc">Team member</th>';
+  for(let d=1;d<=days;d++){
+    const ds=`${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dd=new Date(ds+'T00:00:00');
+    const wk=dd.getDay();const isW=wk===0||wk===6;
+    const isTd=ds===todayStr;
+    const cl=clashLevel[ds];
+    const thCls=isTd?'tdc':(cl==='crit'?'ch3':cl==='warn'?'ch2':'');
+    // Show % in header on clash days
+    const pct=cl?(Math.round((activeRec.filter(p=>{const ev=evtMap[p+'|'+ds];return ev&&ev.type!=='bday'&&ev.type!=='ph';}).length/activeRec.length)*100))+'%':'';
+    html+=`<th class="${thCls}" style="${isW?'color:#9ca3af':''}">${d}<br><span style="font-size:7px;font-weight:400">${DAYS[wk]}</span>${pct?`<br><span style="font-size:7px;font-weight:800">${pct} off</span>`:''}</th>`;
+  }
+  html+='<th class="sum">DO</th><th class="sum">S</th><th class="sum">PH</th><th class="sum">PL</th></tr></thead><tbody>';
+
+  const renderGroup=(groupMembers,stLabel,stColor)=>{
+    const toShow=groupMembers.filter(p=>team.includes(p));
+    if(!toShow.length) return '';
+    let rows=`<tr><td colspan="${days+5}" style="padding:0"><div class="sthdr"><span class="shdot" style="background:${stColor}"></span>${stLabel}</div></td></tr>`;
+    for(const person of toShow){
+      const isML=ON_LEAVE.includes(person);
+      let cDO=0,cS=0,cPH=0,cPL=0;
+      rows+=`<tr${isML?' class="mlrow"':''}><td class="nmc">${person}${isML?` <span style="font-size:9px;color:#16a34a;font-style:normal;font-weight:400">(on leave)</span>`:''}</td>`;
+      for(let d=1;d<=days;d++){
+        const ds=`${curY}-${String(curM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const isTd=ds===todayStr;
+        const dd2=new Date(ds+'T00:00:00');const isW=dd2.getDay()===0||dd2.getDay()===6;
+        const ev=evtMap[person+'|'+ds];
+        const cl=clashLevel[ds];
+        let bg=isW?'#f9fafb':'transparent';
+        let inner='';
+        if(ev){
+          bg=TC[ev.type];
+          inner=`<div class="pip" style="background:${TC[ev.type]};color:${TXT[ev.type]}">${TL[ev.type]}</div>`;
+          if(ev.type==='dayoff') cDO++;
+          else if(ev.type==='sick') cS++;
+          else if(ev.type==='ph') cPH++;
+          else if(ev.type==='parental') cPL++;
+        } else if(!isW&&cl==='crit') bg='#fff1f2';
+        else if(!isW&&cl==='warn') bg='#fffbf0';
+        const tdCls=isTd?'tdc':(isW?'wknd':'');
+        rows+=`<td class="${tdCls}" style="background:${bg}" title="${ev?ev.summary:''}">${inner}</td>`;
+      }
+      rows+=`<td class="sum">${cDO||''}</td><td class="sum" style="${cS?'color:#dc2626':''}">${cS||''}</td><td class="sum">${cPH||''}</td><td class="sum" style="${cPL?'color:#16a34a':''}">${cPL?cPL+'d':''}</td></tr>`;
+    }
+    return rows;
+  };
+
+  if(curST==='all'){
+    html+=renderGroup(REC_MEMBERS,'Recruitment','#7c3aed');
+    html+=renderGroup(HR_MEMBERS,'HR Admin','#0891b2');
+    html+=renderGroup(LEADERSHIP,'HR Leadership','#1B3A6B');
+  } else if(curST==='rec'){
+    html+=renderGroup(REC_MEMBERS,'Recruitment','#7c3aed');
+  } else {
+    html+=renderGroup(HR_MEMBERS,'HR Admin','#0891b2');
+  }
+
+  html+='</tbody></table>';
+  document.getElementById('p-month').innerHTML=html;
+}
+
+function renderClashes(){
+  const today=new Date().toISOString().slice(0,10);
+  const all=getRecClashes();
+  const future=all.filter(c=>c.date>=today);
+  const past=all.filter(c=>c.date<today);
+  const badge=document.getElementById('cbadge');
+  if(future.length){badge.style.display='inline-flex';badge.textContent=future.length;}
+  else badge.style.display='none';
+
+  let html='';
+  if(!all.length){html='<p style="font-size:13px;color:#6b7280">No Recruitment clash days found for the rest of 2026 — great coverage!</p>';}
+
+  const renderGroup=(items,isCrit)=>{
+    if(!items.length) return '';
+    const title=isCrit
+      ?`&#9888; Critical — only 1 person available in Recruitment (${items.length} day${items.length!==1?'s':''})`
+      :`&#9651; Watch — only 2 people available in Recruitment (${items.length} day${items.length!==1?'s':''})`;
+    let s=`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:${isCrit?'#991b1b':'#92400e'};margin-bottom:8px">${title}</div>`;
+    for(const c of items){
+      const dd=new Date(c.date+'T00:00:00');
+      const fmt=dd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const pct=Math.round((c.absent.length/c.total)*100);
+      s+=`<div style="border:1px solid ${isCrit?'#fca5a5':'#fcd34d'};background:${isCrit?'#fef2f2':'#fffbeb'};border-radius:8px;padding:10px 14px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:600;color:${isCrit?'#991b1b':'#92400e'}">${fmt}</span>
+          <span style="font-size:10px;font-weight:700;background:${isCrit?'#fee2e2':'#fef3c7'};color:${isCrit?'#991b1b':'#92400e'};padding:2px 8px;border-radius:4px">${c.absent.length} of ${c.total} absent · ${pct}% off · ${c.present} available</span>
+        </div>
+        <div style="font-size:11px;color:#6b7280">${c.absent.map(p=>`<strong style="color:${isCrit?'#7f1d1d':'#78350f'}">${p}</strong> <span>(${TNAME[evtMap[p+'|'+c.date]?.type||'other']})</span>`).join(' &nbsp;·&nbsp; ')}</div>
+      </div>`;
+    }
+    return s+'</div>';
+  };
+
+  if(future.length){
+    html+=renderGroup(future.filter(c=>c.level==='crit'),true);
+    html+=renderGroup(future.filter(c=>c.level==='warn'),false);
+  }
+
+  if(past.length){
+    html+=`<details style="margin-top:8px"><summary style="font-size:12px;color:#6b7280;cursor:pointer;padding:4px 0">Past Recruitment clash days this year (${past.length})</summary><div style="margin-top:10px">`;
+    for(const c of past.slice(-20).reverse()){
+      const dd=new Date(c.date+'T00:00:00');
+      const fmt=dd.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      html+=`<div style="font-size:11px;color:#9ca3af;padding:4px 0;border-bottom:1px solid #f3f4f6">${fmt} — ${c.present} available — ${c.absent.join(', ')}</div>`;
+    }
+    html+='</div></details>';
+  }
+  document.getElementById('p-clashes').innerHTML=html;
+}
+
+function renderAnnual(){
+  const curMI=new Date().getMonth();
+  const team=getActiveTeam();
+  let html='<div class="ann-grid"><div class="ah an">Member</div>';
+  for(const m of MS) html+=`<div class="ah">${m}</div>`;
+
+  const renderAnnRow=(person)=>{
+    const isML=ON_LEAVE.includes(person);
+    let row=`<div class="an" title="${person}" style="${isML?'opacity:.6;font-style:italic':''}">${person.split(' ')[0]} ${person.split(' ').slice(1).map(x=>x[0]+'.').join('')}${isML?' <span style="font-size:9px;color:#16a34a">(ML)</span>':''}</div>`;
+    for(let mi=0;mi<12;mi++){
+      const d=dim(curY,mi);let cDO=0,cS=0,cPH=0,cPL=0;
+      for(let day=1;day<=d;day++){
+        const ds=`${curY}-${String(mi+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const ev=evtMap[person+'|'+ds];if(!ev) continue;
+        if(ev.type==='dayoff') cDO++;
+        else if(ev.type==='sick') cS++;
+        else if(ev.type==='ph') cPH++;
+        else if(ev.type==='parental') cPL++;
+      }
+      const isCm=mi===curMI;
+      let bg='transparent',content='';
+      if(cPL>0){bg='#dcfce7';content=`<span style="color:#166534;font-weight:700;font-size:10px">PL</span>`;}
+      else if(cS>0){bg='#fee2e2';content=`<span style="color:#991b1b;font-weight:700">${cS}s</span>`;}
+      else if(cDO>0){bg='#dbeafe';content=`<span style="color:#1e40af;font-weight:600">${cDO}</span>`;}
+      else if(cPH>0){bg='#fef3c7';content=`<span style="color:#92400e">${cPH}ph</span>`;}
+      row+=`<div class="ac${isCm?' cm':''}" style="background:${bg}">${content}</div>`;
+    }
+    return row;
+  };
+
+  if(curST==='all'){
+    html+=`<div class="asth">Recruitment</div>`;for(let i=0;i<12;i++) html+=`<div class="astsp" style="background:#f5f3ff"></div>`;
+    for(const p of REC_MEMBERS.filter(p=>team.includes(p))) html+=renderAnnRow(p);
+    html+=`<div class="asth">HR Admin</div>`;for(let i=0;i<12;i++) html+=`<div class="astsp" style="background:#ecfeff"></div>`;
+    for(const p of HR_MEMBERS.filter(p=>team.includes(p))) html+=renderAnnRow(p);
+    const lead=LEADERSHIP.filter(p=>team.includes(p));
+    if(lead.length){html+=`<div class="asth">HR Leadership</div>`;for(let i=0;i<12;i++) html+=`<div class="astsp" style="background:#eff6ff"></div>`;for(const p of lead) html+=renderAnnRow(p);}
+  } else {
+    for(const p of team) html+=renderAnnRow(p);
+  }
+  html+='</div>';
+  document.getElementById('p-annual').innerHTML=html;
+}
+
+doRefresh();
+</script>
+</body>
+</html>
